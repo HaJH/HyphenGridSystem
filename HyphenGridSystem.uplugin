@@ -3,10 +3,10 @@
 	"Version": 1,
 	"VersionName": "1.0",
 	"FriendlyName": "HyphenGridSystem",
-	"Description": "",
-	"Category": "Other",
+	"Description": "Simple grid system code plugin for Unreal Engine",
+	"Category": "Gameplay",
 	"CreatedBy": "Jeonghyeon Ha",
-	"CreatedByURL": "",
+	"CreatedByURL": "https://github.com/HaJH/HyphenGridSystem",
 	"DocsURL": "",
 	"MarketplaceURL": "",
 	"SupportURL": "",
@@ -24,7 +24,8 @@
 	"Plugins": [
 		{
 			"Name": "HyphenUtil",
-			"Enabled": true
+			"Enabled": true,
+			"MarketplaceURL": "https://github.com/HaJH/HyphenUtil"
 		}
 	]
 }
