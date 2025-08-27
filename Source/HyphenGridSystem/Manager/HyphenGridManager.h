@@ -66,5 +66,11 @@ protected:
 	FGridUnitSet EmptyGridUnitSet;
 
 private:
+	// Cached grid math constants for fast lookup
+	int32 CachedGridCount = 0;
+	float CachedCellSize = 0.f;
+	float InvCellSize = 0.f;
+	float HalfGridSize = 0.f;
+
 	static TObjectPtr<AHyphenGridManager> Instance;
 };

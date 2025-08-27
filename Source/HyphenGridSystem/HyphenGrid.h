@@ -13,7 +13,7 @@ struct FHyphenGridInitializeData
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	float GridSize = 100.f;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	int32 GridCount = 10;
+	int32 GridCount = 20;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite) // Offset is not implemented yet.
 	FVector2D GridOffset = FVector2D::ZeroVector;
 };
