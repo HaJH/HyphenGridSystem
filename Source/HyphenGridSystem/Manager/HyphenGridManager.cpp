@@ -10,14 +10,15 @@
 #include "HyphenGridSystem/HyphenGridSettings.h"
 #include "HyphenGridSystem/Unit/HyphenGridUnit.h"
 #include "HyphenGridSystem/HyphenGridSystemStats.h"
+#include "DrawDebugHelpers.h"
 
 TObjectPtr<AHyphenGridManager> AHyphenGridManager::Instance = nullptr;
 
 // Sets default values
 AHyphenGridManager::AHyphenGridManager()
 {
-	// Tick 비활성화: 그리드 매니저는 틱이 필요하지 않습니다.
-	PrimaryActorTick.bCanEverTick = false;
+	PrimaryActorTick.bCanEverTick = true;
+	PrimaryActorTick.TickInterval = .5f;
 }
 
 AHyphenGridManager* AHyphenGridManager::Get()
@@ -38,6 +39,27 @@ void AHyphenGridManager::EndPlay(const EEndPlayReason::Type EndPlayReason)
 	Super::EndPlay(EndPlayReason);
 }
 
+void AHyphenGridManager::Tick(float DeltaSeconds)
+{
+	Super::Tick(DeltaSeconds);
+
+	// Allow runtime toggle of debug setting
+	const bool bDebug = UHyphenGridSettings::Get()->bDebug;
+	if (!bDebug)
+	{
+		if (IsActorTickEnabled())
+		{
+			SetActorTickEnabled(false);
+		}
+		return;
+	}
+	else if (!IsActorTickEnabled())
+	{
+		SetActorTickEnabled(true);
+	}
+	
+	DebugDraw();
+}
 
 void AHyphenGridManager::InitializeGridSystem(const FHyphenGridInitializeData& InitializeData)
 {
@@ -379,4 +401,61 @@ int32 AHyphenGridManager::GetGridUnitCount(IHyphenGridCell* GridCell)
 		return Bucket->GridUnitSet.Num();
 	}
 	return 0;
+}
+
+void AHyphenGridManager::DebugDraw()
+{
+	UWorld* World = GetWorld();
+	if (!World)
+	{
+		return;
+	}
+
+	if (CachedGridCount <= 0 || CachedCellSize <= 0.f)
+	{
+		return;
+	}
+
+	// Draw grid bounds (slightly above ground)
+	const float Z = 50.f;
+	const FVector Origin(0.f, 0.f, Z);
+	const float Half = HalfGridSize;
+	const FVector A(-Half, -Half, Z);
+	const FVector B( Half, -Half, Z);
+	const FVector C( Half,  Half, Z);
+	const FVector D(-Half,  Half, Z);
+	const float Duration = PrimaryActorTick.TickInterval * 1.01;
+	const float Thickness = 10.f;
+	DrawDebugLine(World, A, B, FColor::Cyan, false, Duration, 0, Thickness);
+	DrawDebugLine(World, B, C, FColor::Cyan, false, Duration, 0, Thickness);
+	DrawDebugLine(World, C, D, FColor::Cyan, false, Duration, 0, Thickness);
+	DrawDebugLine(World, D, A, FColor::Cyan, false, Duration, 0, Thickness);
+
+	// Draw each cell box and info
+	for (int32 i = 0; i < CachedGridCount; ++i)
+	{
+		for (int32 j = 0; j < CachedGridCount; ++j)
+		{
+			const int32 Index = i * CachedGridCount + j;
+			if (!GridCells.IsValidIndex(Index)) continue;
+			IHyphenGridCell* Cell = Cast<IHyphenGridCell>(GridCells[Index]);
+			if (!Cell) continue;
+
+			const FVector Center = Cell->GetCellCenterLocation() + FVector(0,0,Z);
+			const FVector Extents(CachedCellSize * 0.5f, CachedCellSize * 0.5f, 2.f);
+			const int32 UnitCount = GetGridUnitCount(Cell);
+			FColor Color = FColor::Green;
+			if (UnitCount > 0) Color = FColor::Yellow;
+			if (UnitCount > 3) Color = FColor::Red;
+
+			DrawDebugBox(World, Center, Extents, FQuat::Identity, Color, false, Duration, 0, 4.f);
+
+			// Show indices and unit count
+			if (UnitCount > 0)
+			{
+				FString Text = FString::Printf(TEXT("(%d,%d) #%d"), i, j, UnitCount);
+				DrawDebugString(World, Center + FVector(0,0,25.f), Text, nullptr, FColor::White, Duration, false, 1.f);
+			}
+		}
+	}
 }

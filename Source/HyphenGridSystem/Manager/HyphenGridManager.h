@@ -27,6 +27,8 @@ public:
 	AHyphenGridManager();
 	static AHyphenGridManager* Get();
 
+	virtual void Tick(float DeltaSeconds) override;
+
 	void InitializeGridSystem(const FHyphenGridInitializeData& InitializeData);
 	void RegisterGridUnit(IHyphenGridUnit* GridUnit);
 	void UnregisterGridUnit(IHyphenGridUnit* GridUnit);
@@ -71,6 +73,9 @@ private:
 	float CachedCellSize = 0.f;
 	float InvCellSize = 0.f;
 	float HalfGridSize = 0.f;
+
+	// Debug draw controls
+	void DebugDraw();
 
 	static TObjectPtr<AHyphenGridManager> Instance;
 };
