@@ -20,6 +20,8 @@ public:
 		check(Settings);
 		return Settings;
 	}
-	UPROPERTY(config, EditAnywhere, BlueprintReadOnly, Category = "HyphenGridSystem|Avoidance")
+	UPROPERTY(config, EditAnywhere, BlueprintReadOnly, Category = "HyphenGridSystem")
 	int32 GridCount = 10;
+	UPROPERTY(config, EditAnywhere, BlueprintReadOnly, Category = "HyphenGridSystem")
+	bool bDebug = false;
 };

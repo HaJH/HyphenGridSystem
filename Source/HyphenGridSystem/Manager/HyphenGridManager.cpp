@@ -9,6 +9,7 @@
 #include "HyphenUtilLibrary.h"
 #include "HyphenGridSystem/HyphenGridSettings.h"
 #include "HyphenGridSystem/Unit/HyphenGridUnit.h"
+#include "HyphenGridSystem/HyphenGridSystemStats.h"
 
 TObjectPtr<AHyphenGridManager> AHyphenGridManager::Instance = nullptr;
 
@@ -40,6 +41,7 @@ void AHyphenGridManager::EndPlay(const EEndPlayReason::Type EndPlayReason)
 
 void AHyphenGridManager::InitializeGridSystem(const FHyphenGridInitializeData& InitializeData)
 {
+	SCOPE_CYCLE_COUNTER(STAT_Grid_Initialize);
 	GridInitializeData = InitializeData;
 
 	// Cache grid math constants
@@ -71,10 +73,12 @@ void AHyphenGridManager::InitializeGridSystem(const FHyphenGridInitializeData& I
 
 void AHyphenGridManager::RegisterGridUnit(IHyphenGridUnit* GridUnit)
 {
+	SCOPE_CYCLE_COUNTER(STAT_Grid_RegisterUnit);
 	AActor* Actor = HyphenUtil::GetInterfaceActor(GridUnit);
 	if(Actor)
 	{
 		AllGridUnits.Add(Actor);
+		INC_DWORD_STAT(STAT_Grid_UnitsTotal);
 		// Add Grid Unit to Grid Cell by Location
 		FVector Location = GridUnit->GetUnitLocation();
 		IHyphenGridCell* GridCell = GetCellAtLocation(Location);
@@ -88,6 +92,7 @@ void AHyphenGridManager::RegisterGridUnit(IHyphenGridUnit* GridUnit)
 			{
 				FGridUnitSet NewSet; NewSet.GridUnitSet.Add(Actor);
 				GridUnitsByGridCell.Add(Cast<UObject>(GridCell), MoveTemp(NewSet));
+				INC_DWORD_STAT(STAT_Grid_BucketsActive);
 			}
 			GridUnit->SetCurrentGridCell(GridCell);
 		}
@@ -96,6 +101,7 @@ void AHyphenGridManager::RegisterGridUnit(IHyphenGridUnit* GridUnit)
 
 void AHyphenGridManager::UnregisterGridUnit(IHyphenGridUnit* GridUnit)
 {
+	SCOPE_CYCLE_COUNTER(STAT_Grid_UnregisterUnit);
 	if(IsValid(Get()) == false)
 	{
 		return;
@@ -104,6 +110,7 @@ void AHyphenGridManager::UnregisterGridUnit(IHyphenGridUnit* GridUnit)
 	if(Actor && AllGridUnits.Contains(Actor))
 	{
 		AllGridUnits.Remove(Actor);
+		DEC_DWORD_STAT(STAT_Grid_UnitsTotal);
 		// Remove Grid Unit from Grid Cell by Location
 		if(IHyphenGridCell* GridCell = GridUnit->GetCurrentGridCell())
 		{
@@ -113,6 +120,7 @@ void AHyphenGridManager::UnregisterGridUnit(IHyphenGridUnit* GridUnit)
 				if (Bucket->GridUnitSet.Num() == 0)
 				{
 					GridUnitsByGridCell.Remove(Cast<UObject>(GridCell));
+					DEC_DWORD_STAT(STAT_Grid_BucketsActive);
 				}
 			}
 			GridUnit->SetCurrentGridCell(nullptr);
@@ -122,6 +130,7 @@ void AHyphenGridManager::UnregisterGridUnit(IHyphenGridUnit* GridUnit)
 
 void AHyphenGridManager::OnGridUnitMove(IHyphenGridUnit* GridUnit, FVector NewLocation)
 {
+	SCOPE_CYCLE_COUNTER(STAT_Grid_OnGridUnitMove);
 	AActor* Actor = HyphenUtil::GetInterfaceActor(GridUnit);
 	if(Actor && AllGridUnits.Contains(Actor))
 	{
@@ -156,6 +165,7 @@ void AHyphenGridManager::OnGridUnitMove(IHyphenGridUnit* GridUnit, FVector NewLo
 			{
 				FGridUnitSet NewSet; NewSet.GridUnitSet.Add(Actor);
 				GridUnitsByGridCell.Add(Cast<UObject>(NewCell), MoveTemp(NewSet));
+				INC_DWORD_STAT(STAT_Grid_BucketsActive);
 			}
 			GridUnit->SetCurrentGridCell(NewCell);
 		}
@@ -164,7 +174,7 @@ void AHyphenGridManager::OnGridUnitMove(IHyphenGridUnit* GridUnit, FVector NewLo
 
 IHyphenGridCell* AHyphenGridManager::GetCellAtLocation(FVector Location)
 {
-	QUICK_SCOPE_CYCLE_COUNTER(STAT_AHyphenGridManager_GetCellAtLocation);
+	SCOPE_CYCLE_COUNTER(STAT_Grid_GetCellAtLocation);
 	// Fast index computation using cached values
 	if (CachedGridCount <= 0 || CachedCellSize <= 0.f)
 	{
@@ -185,7 +195,8 @@ IHyphenGridCell* AHyphenGridManager::GetCellAtLocation(FVector Location)
 
 TArray<IHyphenGridCell*> AHyphenGridManager::GetCellsByLocation(FVector Location, float Radius)
 {
-	QUICK_SCOPE_CYCLE_COUNTER(STAT_AHyphenGridManager_GetCellsByLocation);
+	SCOPE_CYCLE_COUNTER(STAT_Grid_GetCellsByLocation);
+	INC_DWORD_STAT(STAT_Grid_QueriesCells);
 	TArray<IHyphenGridCell*> CellsInRadius;
 
 	if (CachedGridCount <= 0 || CachedCellSize <= 0.f)
@@ -235,7 +246,7 @@ TArray<IHyphenGridCell*> AHyphenGridManager::GetCellsByLocation(FVector Location
 
 TArray<IHyphenGridCell*> AHyphenGridManager::GetAdjacentGridCell(IHyphenGridCell* GridCell)
 {
-	QUICK_SCOPE_CYCLE_COUNTER(STAT_AHyphenGridManager_GetAdjacentGridCell);
+	SCOPE_CYCLE_COUNTER(STAT_Grid_GetAdjacentGridCell);
 	// Get around grid cells
 	TArray<IHyphenGridCell*> AroundGridCells;
 	if(GridCell)
@@ -279,7 +290,8 @@ const TSet<TWeakObjectPtr<UObject>>& AHyphenGridManager::GetGridUnits(IHyphenGri
 
 TArray<IHyphenGridUnit*> AHyphenGridManager::GetGridUnitsByLocation(FVector Location, float Radius)
 {
-	QUICK_SCOPE_CYCLE_COUNTER(STAT_AHyphenGridManager_GetGridUnitsByLocation);
+	SCOPE_CYCLE_COUNTER(STAT_Grid_GetGridUnitsByLocation);
+	INC_DWORD_STAT(STAT_Grid_QueriesUnits);
 	const auto& Cells = GetCellsByLocation(Location, Radius);
 	TArray<IHyphenGridUnit*> GridUnits;
 	const float R2 = Radius * Radius;
@@ -361,6 +373,7 @@ TArray<IHyphenGridUnit*> AHyphenGridManager::GetGridUnitsByLocation(FVector Loca
 
 int32 AHyphenGridManager::GetGridUnitCount(IHyphenGridCell* GridCell)
 {
+	SCOPE_CYCLE_COUNTER(STAT_Grid_GetGridUnitCount);
 	if (FGridUnitSet* Bucket = GridUnitsByGridCell.Find(Cast<UObject>(GridCell)))
 	{
 		return Bucket->GridUnitSet.Num();
