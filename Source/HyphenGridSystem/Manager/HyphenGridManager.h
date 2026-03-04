@@ -42,8 +42,9 @@ public:
 	// TArray<IHyphenGridUnit*> GetAroundGridUnits(IHyphenGridUnit* GridUnit);
 	// TArray<IHyphenGridUnit*> GetSameGridUnits(IHyphenGridUnit* GridUnit);
 	TArray<IHyphenGridUnit*> GetGridUnitsByLocation(FVector Location, float Radius);
+	TArray<AActor*> GetActorsInAABB(FVector2D Min, FVector2D Max);
 
-	
+
 	// FVector GetAdjustedLocation(FVector Location, FVector DesiredLocation, float Coefficient = 1.f);
 	int32 GetGridUnitCount(IHyphenGridCell* GridCell);
 	// FVector GetAvoidanceForce();

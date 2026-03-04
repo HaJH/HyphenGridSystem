@@ -334,6 +334,47 @@ TArray<IHyphenGridUnit*> AHyphenGridManager::GetGridUnitsByLocation(FVector Loca
 	return GridUnits;
 }
 
+TArray<AActor*> AHyphenGridManager::GetActorsInAABB(FVector2D Min, FVector2D Max)
+{
+	SCOPE_CYCLE_COUNTER(STAT_Grid_GetActorsInAABB);
+	TArray<AActor*> Result;
+
+	if (CachedGridCount <= 0 || CachedCellSize <= 0.f)
+	{
+		return Result;
+	}
+
+	const int32 MinX = FMath::Clamp(FMath::FloorToInt((Min.X + HalfGridSize) * InvCellSize), 0, CachedGridCount - 1);
+	const int32 MaxX = FMath::Clamp(FMath::FloorToInt((Max.X + HalfGridSize) * InvCellSize), 0, CachedGridCount - 1);
+	const int32 MinY = FMath::Clamp(FMath::FloorToInt((Min.Y + HalfGridSize) * InvCellSize), 0, CachedGridCount - 1);
+	const int32 MaxY = FMath::Clamp(FMath::FloorToInt((Max.Y + HalfGridSize) * InvCellSize), 0, CachedGridCount - 1);
+
+	for (int32 i = MinX; i <= MaxX; ++i)
+	{
+		for (int32 j = MinY; j <= MaxY; ++j)
+		{
+			const int32 Index = i * CachedGridCount + j;
+			if (!GridCells.IsValidIndex(Index))
+			{
+				continue;
+			}
+
+			if (const FGridUnitSet* Bucket = GridUnitsByGridCell.Find(GridCells[Index]))
+			{
+				for (const TWeakObjectPtr<UObject>& Obj : Bucket->GridUnitSet)
+				{
+					if (AActor* Actor = Cast<AActor>(Obj.Get()))
+					{
+						Result.Add(Actor);
+					}
+				}
+			}
+		}
+	}
+
+	return Result;
+}
+
 
 // FVector AHyphenGridManager::GetAdjustedLocation(FVector Location, FVector DesiredLocation, float Coefficient)
 // {

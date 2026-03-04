@@ -18,6 +18,7 @@ DECLARE_CYCLE_STAT(TEXT("GetCellsByLocation"),   STAT_Grid_GetCellsByLocation, S
 DECLARE_CYCLE_STAT(TEXT("GetAdjacentGridCell"),  STAT_Grid_GetAdjacentGridCell, STATGROUP_HyphenGrid);
 DECLARE_CYCLE_STAT(TEXT("GetGridUnitsByLocation"), STAT_Grid_GetGridUnitsByLocation, STATGROUP_HyphenGrid);
 DECLARE_CYCLE_STAT(TEXT("GetGridUnitCount"),     STAT_Grid_GetGridUnitCount, STATGROUP_HyphenGrid);
+DECLARE_CYCLE_STAT(TEXT("GetActorsInAABB"),      STAT_Grid_GetActorsInAABB, STATGROUP_HyphenGrid);
 
 // Counters (integer metrics)
 DECLARE_DWORD_COUNTER_STAT(TEXT("Units.Total"),      STAT_Grid_UnitsTotal, STATGROUP_HyphenGrid);
